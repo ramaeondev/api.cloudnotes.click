@@ -12,7 +12,7 @@ app = FastAPI(title="Logit API", version="1.0")
 # Enable CORS (for frontend to communicate)
 app.add_middleware(
     CORSMiddleware,
-    allow_oriBranchgins=["*"],  # Update this to specific domains in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
