@@ -45,37 +45,29 @@ jobs:
       - name: Deploy to EC2
         run: | 
             ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
-                echo "Navigating to the correct directory..."
-                cd /home/ec2-user/logit_api/
-
-                echo "Stopping any running containers..."
-                docker stop $(docker ps -q) || true
-                docker rm $(docker ps -aq) || true
+                export ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+                export ECR_REPOSITORY="logit-api"
+                export IMAGE_TAG="latest"
+            
                 echo "Checking environment variables..."
                 echo "ECR Registry: $ECR_REGISTRY"
                 echo "ECR Repository: $ECR_REPOSITORY"
                 echo "Image Tag: $IMAGE_TAG"
                 echo "Full Image Path: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
+            
                 echo "Pulling the latest image..."
                 docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || { echo "Image pull failed!"; exit 1; }
-
-                echo "Pulling the latest image..."
-                docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || { echo "Image pull failed!"; exit 1; }
-
-                echo "Restarting the application..."
-                docker-compose down || { echo "Docker Compose down failed!"; exit 1; }
-                docker-compose up -d || { echo "Docker Compose up failed!"; exit 1; }
             EOF
+
         shell: /usr/bin/bash -e {0}
         env:
-              AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-              AWS_REGION: ${{ secrets.AWS_REGION }}
-              AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-              AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              EC2_HOST: ${{ secrets.EC2_HOST }}
-              EC2_USER: ${{ secrets.EC2_USER }}
-              ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-              ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-              IMAGE_TAG: latest
+            AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+            AWS_REGION: ${{ secrets.AWS_REGION }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            EC2_HOST: ${{ secrets.EC2_HOST }}
+            EC2_USER: ${{ secrets.EC2_USER }}
+            ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+            IMAGE_TAG: latest
           
