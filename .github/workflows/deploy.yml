@@ -34,7 +34,14 @@ jobs:
           docker build -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-     
+          
+      - name: Set up SSH Key
+        run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/ec2_key.pem
+            chmod 600 ~/.ssh/ec2_key.pem
+            ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy to EC2
         env:
             EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -43,7 +50,7 @@ jobs:
             ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
             IMAGE_TAG: latest
         run: |
-            ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+            ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
             docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
             cd /home/ec2-user/logit_api/
             docker-compose down
