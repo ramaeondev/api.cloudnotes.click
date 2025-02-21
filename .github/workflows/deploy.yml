@@ -43,11 +43,11 @@ jobs:
             ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
-        run: |
+        run: | 
             ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
                 echo "Stopping any running containers..."
-                docker stop $(docker ps -q --filter "ancestor=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG") || true
-                docker rm $(docker ps -aq --filter "ancestor=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG") || true
+                docker stop $(docker ps -q) || true
+                docker rm $(docker ps -aq) || true
           
                 echo "Pulling Image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                 docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
