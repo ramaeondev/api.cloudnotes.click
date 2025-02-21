@@ -20,20 +20,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Login to Amazon ECR Public≈
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr-public get-login-password --region ap-south-2 | \
+          docker login --username AWS --password-stdin public.ecr.aws
 
       - name: Build, Tag, and Push Docker Image
         env:
-          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: latest
+            ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/ramaeondev
+            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+            IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REPOSITORY .
-          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker build -t logit .
+            docker tag logit $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
+            docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAGG
           
       - name: Set up SSH Key
         run: |
@@ -44,30 +44,16 @@ jobs:
 
       - name: Deploy to EC2
         run: | 
-            ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
-                export ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
-                export ECR_REPOSITORY="logit-api"
-                export IMAGE_TAG="latest"
-            
-                echo "Checking environment variables..."
-                echo "ECR Registry: $ECR_REGISTRY"
-                echo "ECR Repository: $ECR_REPOSITORY"
-                echo "Image Tag: $IMAGE_TAG"
-                echo "Full Image Path: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-            
+            ssh -i ~/.ssh/ec2_key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
                 echo "Pulling the latest image..."
-                docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || { echo "Image pull failed!"; exit 1; }
+                docker pull public.ecr.aws/r5p8n8t0/ramaeondev/logit:latest || { echo "Image pull failed!"; exit 1; }
+                
+                echo "Stopping running containers..."
+                docker stop $(docker ps -q) || true
+                docker rm $(docker ps -aq) || true
+                
+                echo "Restarting application..."
+                cd /home/ec2-user/logit_api/
+                docker-compose down || { echo "Docker Compose down failed!"; exit 1; }
+                docker-compose up -d || { echo "Docker Compose up failed!"; exit 1; }
             EOF
-
-        shell: /usr/bin/bash -e {0}
-        env:
-            AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-            AWS_REGION: ${{ secrets.AWS_REGION }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            EC2_HOST: ${{ secrets.EC2_HOST }}
-            EC2_USER: ${{ secrets.EC2_USER }}
-            ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-            IMAGE_TAG: latest
-          
