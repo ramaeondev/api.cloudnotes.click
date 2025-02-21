@@ -28,12 +28,11 @@ jobs:
       - name: Build, Tag, and Push Docker Image
         env:
             ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/ramaeondev
-            ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
             IMAGE_TAG: latest
         run: |
             docker build -t logit .
             docker tag logit $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
-            docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAGG
+            docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
           
       - name: Set up SSH Key
         run: |
