@@ -8,8 +8,8 @@ from alembic import context
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import the database URL and models
-from app.db import DATABASE_URL
-from app.models import Base  # Ensure your models are imported for autogenerate
+from app.db.database import DATABASE_URL
+from app.db.models import Base  # Ensure your models are imported for autogenerate
 
 # Alembic Config object
 config = context.config

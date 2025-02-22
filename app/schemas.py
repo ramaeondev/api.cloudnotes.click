@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+from typing import Optional, Any
 
 class UserCreate(BaseModel):
     first_name: str
@@ -21,3 +22,8 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class StandardResponse(BaseModel):
+    success: bool
+    message: str
+    status_code: int
+    data: Optional[Any] = None
