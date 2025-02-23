@@ -51,9 +51,12 @@ jobs:
                 echo "Stopping running containers..."
                 docker stop $(docker ps -q) || true
                 docker rm $(docker ps -aq) || true
+
+                echo "Removing old images..."
+                docker image prune -af || true
                 
                 echo "Restarting application..."
                 cd /home/ec2-user/logit_api/
-                docker-compose down || { echo "Docker Compose down failed!"; exit 1; }
-                docker-compose up -d || { echo "Docker Compose up failed!"; exit 1; }
+                docker-compose pull || { echo "Docker Compose pull failed!"; exit 1; }
+                docker-compose up -d --force-recreate || { echo "Docker Compose up failed!"; exit 1; }
             EOF
