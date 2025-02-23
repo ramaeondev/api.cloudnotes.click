@@ -1,14 +1,14 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 from typing import Optional, Any
 
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
-    username: str
     email: EmailStr
     password: str
+    username: Optional[str] = None  # Make username optional
 
 class UserResponse(BaseModel):
     id: int
@@ -20,10 +20,12 @@ class UserResponse(BaseModel):
     role: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+class Config:
+    from_attributes = True
+
 class StandardResponse(BaseModel):
-    success: bool
-    message: str
-    status_code: int
-    data: Optional[Any] = None
+    isSuccess: bool  # Indicates success or failure
+    messages: List[str] = []  # List of success messages
+    errors: List[str] = []  # List of error messages
+    data: Optional[Any] = None  # Response data
+    status_code: int  # HTTP status code
