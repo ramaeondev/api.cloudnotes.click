@@ -1,56 +1,48 @@
 import os
-import re
-from sqlalchemy.exc import IntegrityError
-from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Depends, status
-from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+import logging
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import ExpiredSignatureError, JWTError, jwt
+import ulid
 from datetime import datetime, timedelta, timezone
+from fastapi import APIRouter, BackgroundTasks, FastAPI, HTTPException, Depends, status, Body
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
+from jose import jwt
+from app.core.config import get_config, init_cors, init_db
+from app.db.database import get_db
 from app.db.models import User
 from app.email_sender import send_email
-from app.schemas import UserCreate
-from app.schemas import StandardResponse
-from app.db.database import get_db
-import logging
-import ulid
+from app.schemas import UserCreate, StandardResponse
+from app.security import (
+    get_current_user,
+    create_access_token,
+    create_refresh_token,
+    verify_confirmation_token,
+    is_password_secure,
+    create_reset_token,
+    verify_reset_token,
+)
 
+# Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Load configuration settings
+config = get_config()
+
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     
 router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = os.getenv("SECRET_KEY", "DonaldTrumpIsTheBestPresident")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-CONFIRMATION_TOKEN_EXPIRE_MINUTES = 60  # Token valid for 1 hour
-REFRESH_TOKEN_EXPIRE_DAYS = 7  # Refresh token valid for 7 days
+pwd_context = config.PWD_CONTEXT
 
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    """Generates a JWT access token"""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def create_confirmation_token(email: str):
     """Generate an account confirmation token"""
-    expire = datetime.now(timezone.utc) + timedelta(minutes=CONFIRMATION_TOKEN_EXPIRE_MINUTES)
-    return jwt.encode({"sub": email, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
-
-def verify_confirmation_token(token: str):
-    """Decode and validate the confirmation token"""
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload["sub"]
-    except ExpiredSignatureError:
-        raise HTTPException(status_code=400, detail="Reset token has expired")
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid reset token")
+    expire = datetime.now(timezone.utc) + timedelta(minutes=config.CONFIRMATION_TOKEN_EXPIRE_MINUTES)
+    return jwt.encode({"sub": email, "exp": expire}, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
 @router.post("/register", response_model=StandardResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -92,7 +84,7 @@ def register_user(user: UserCreate, background_tasks: BackgroundTasks, db: Sessi
 
     # Generate confirmation token
     expire = datetime.now(timezone.utc) + timedelta(hours=1)
-    token = jwt.encode({"sub": new_user.email, "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode({"sub": new_user.email, "exp": expire}, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
     # Dynamic confirmation URL
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
@@ -125,7 +117,6 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
         logger.warning(f"User not found: {form_data.username}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    logger.debug(f"Stored password hash: {user.password_hash}")
     is_password_correct = pwd_context.verify(form_data.password, user.password_hash)
     logger.debug(f"Password verification result: {is_password_correct}")
 
@@ -182,13 +173,6 @@ def confirm_email(token: str, db: Session = Depends(get_db)):
 
     return StandardResponse(isSuccess=True,errors=[], messages=["Email confirmed successfully! You can now log in."], status_code=status.HTTP_200_OK)
 
-def create_refresh_token(data: dict):
-    """Generates a refresh token with an extended expiration time"""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc)  + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire})
-    encoded_refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_refresh_token
 
 @router.post("/reset-password/request", response_model=StandardResponse)
 def request_password_reset( request: ResetPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -202,7 +186,7 @@ def request_password_reset( request: ResetPasswordRequest, background_tasks: Bac
     reset_token = create_reset_token(user.email)
 
     # Dynamic reset URL
-    BASE_URL = "http://localhost:4200"
+    BASE_URL = os.getenv("FRONTEND_URL", "http://localhost:4200")
     reset_url = f"{BASE_URL}/reset-password?token={reset_token}"
 
     # Send email in the background (non-blocking)
@@ -258,20 +242,3 @@ def reset_password(
         data={"email": user.email},
         status_code=status.HTTP_200_OK
     )
-
-def create_reset_token(email: str):
-    expire = datetime.now(timezone.utc) + timedelta(hours=1) 
-    return jwt.encode({"sub": email, "exp": expire}, SECRET_KEY, algorithm="HS256")
-
-
-def verify_reset_token(token: str):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload.get("sub")
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.JWTError:
-        return None
-    
-def is_password_secure(password: str) -> bool:
-    return bool(re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$", password))
