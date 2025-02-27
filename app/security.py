@@ -10,7 +10,7 @@ from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import User
-from app.core.config import Config
+from app.core.config import Config, get_config
 
 # Load settings from Config
 SECRET_KEY = Config().SECRET_KEY
@@ -42,7 +42,8 @@ def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], 
     db: Annotated[Session, Depends(get_db)]
 ) -> User:
-    """Retrieves the currently authenticated user from JWT."""
+    """Extract and validate JWT token, then return user object."""
+    config = get_config()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
@@ -50,20 +51,19 @@ def get_current_user(
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email: str = payload.get("sub")
-        if not user_email:
+        payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.ALGORITHM])
+        user_email: str = payload.get("sub")  
+        if user_email is None:
             raise credentials_exception
-
-        user = db.query(User).filter(User.email == user_email).first()
-        if not user:
-            raise credentials_exception
-
-        return user  # Returning full user object
-    except JWTError as e:
-        print(f"JWT Error: {e}")  # Log the error (optional)
+    except JWTError:
         raise credentials_exception
     
+    user = db.query(User).filter(User.email == user_email).first() 
+    if user is None:
+        raise credentials_exception
+    return user
+       
+       
 def create_access_token(data: dict, expires_delta: timedelta = None):
     """Generates a JWT access token"""
     to_encode = data.copy()

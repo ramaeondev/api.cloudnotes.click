@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 from fastapi.security import OAuth2PasswordRequestForm
@@ -13,9 +14,8 @@ from app.core.config import get_config, init_cors, init_db
 from app.db.database import get_db
 from app.db.models import User
 from app.email_sender import send_email
-from app.schemas import UserCreate, StandardResponse
+from app.schemas import LoginResponse, UserCreate, StandardResponse
 from app.security import (
-    get_current_user,
     create_access_token,
     create_refresh_token,
     verify_confirmation_token,
@@ -107,7 +107,7 @@ def register_user(user: UserCreate, background_tasks: BackgroundTasks, db: Sessi
             status_code=status.HTTP_201_CREATED
         )
 
-@router.post("/login", response_model=StandardResponse, status_code=status.HTTP_200_OK)
+@router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Handles user login and returns a JWT token"""
     logger.debug(f"Received login request for username: {form_data.username}")
@@ -129,21 +129,22 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
 
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
-
-    logger.debug(f"Generated token: {access_token}")
-    return StandardResponse(
+    return LoginResponse(
         isSuccess=True, 
         messages=["Login successful"], 
         errors=[],
+        access_token= access_token,
+        token_type= "bearer",
+        refresh_token= refresh_token,
         data={
-            "access_token": access_token,
-            "refresh_token": refresh_token,
             "user": {
                 "user_id": user.id,
                 "user_ulid": user.user_ulid,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "email": user.email
+                "email": user.email,
+                "access_token": access_token,
+                "refresh_token": refresh_token
             }
         }, 
         status_code=status.HTTP_200_OK

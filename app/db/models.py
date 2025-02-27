@@ -1,13 +1,14 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, TIMESTAMP, Text
+from datetime import datetime, timezone
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, TIMESTAMP, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from ulid import ULID
+import ulid
 from app.db.database import Base  # Ensure this is your SQLAlchemy Base
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_ulid = Column(String(26), unique=True, nullable=False, default=lambda: str(ULID()))
+    user_ulid = Column(String(26), unique=True, nullable=False, default=lambda: ulid.new().str)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
     username = Column(String(50), unique=True, nullable=True)
@@ -28,9 +29,11 @@ class User(Base):
 
 class Note(Base):
     __tablename__ = "notes"
-    id = Column(String(26), primary_key=True, default=lambda: str(ULID()))
+    id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
+    title = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
+    date = Column(DateTime, nullable=False)
     category_id = Column(String(26), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     pinned = Column(Boolean, default=False)
     order_index = Column(Integer, nullable=False, default=0)
@@ -48,7 +51,7 @@ class Note(Base):
 class Category(Base):
     __tablename__ = "categories"
 
-    id = Column(String(26), primary_key=True, default=lambda: str(ULID()))
+    id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(50), nullable=False)
     color = Column(String(10), nullable=True, default="#FFFFFF")  # Default color
@@ -61,7 +64,7 @@ class Category(Base):
 class Attachment(Base):
     __tablename__ = "attachments"
 
-    id = Column(String(26), primary_key=True, default=lambda: str(ULID()))
+    id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
     note_id = Column(String(26), ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_type = Column(String(50), nullable=False)

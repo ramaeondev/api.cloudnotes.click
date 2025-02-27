@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 from typing import Optional, Any
 
@@ -32,12 +32,32 @@ class StandardResponse(BaseModel):
 class NoteCreate(BaseModel):
     title: str
     content: str
-
+    date: datetime # User must provide this field
 class NoteResponse(BaseModel):
-    id: int
+    id: str
     title: str
     content: str
     created_at: datetime
-
+    date: datetime
     class Config:
         from_attributes = True
+
+class UserSchema(BaseModel):
+    """Schema for user details in the login response."""
+    user_id: int
+    user_ulid: str
+    first_name: str
+    last_name: str
+    email: str
+    access_token: str
+    refresh_token: str
+
+class LoginResponse(BaseModel):
+    isSuccess: bool
+    messages: List[str]
+    errors: List[str]
+    access_token: str
+    token_type: str
+    refresh_token: str
+    data: Dict[str, UserSchema]  
+    status_code: int
