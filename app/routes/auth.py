@@ -14,7 +14,9 @@ from app.core.config import get_config, init_cors, init_db
 from app.db.database import get_db
 from app.db.models import User
 from app.email_sender import send_email
-from app.schemas import LoginResponse, UserCreate, StandardResponse
+from app.schemas.auth import LoginResponse
+from app.schemas.response import StandardResponse
+from app.schemas.users import UserCreate
 from app.security import (
     create_access_token,
     create_refresh_token,
@@ -110,7 +112,6 @@ def register_user(user: UserCreate, background_tasks: BackgroundTasks, db: Sessi
 @router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Handles user login and returns a JWT token"""
-    logger.debug(f"Received login request for username: {form_data.username}")
 
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user:

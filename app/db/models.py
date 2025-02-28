@@ -11,7 +11,6 @@ class User(Base):
     user_ulid = Column(String(26), unique=True, nullable=False, default=lambda: ulid.new().str)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
-    username = Column(String(50), unique=True, nullable=True)
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
     profile_picture = Column(String, nullable=True)
@@ -52,11 +51,11 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)  # ✅ Allow NULL
     name = Column(String(50), nullable=False)
     color = Column(String(10), nullable=True, default="#FFFFFF")  # Default color
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
-
+    
     user = relationship("User", back_populates="categories")
     notes = relationship("Note", back_populates="category")  # ✅ Added missing relationship
 
