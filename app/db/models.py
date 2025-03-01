@@ -51,6 +51,7 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
+    numeric_id = Column(Integer, autoincrement=True, unique=True, index=True)  # Add new numeric ID
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)  # ✅ Allow NULL
     name = Column(String(50), nullable=False)
     color = Column(String(10), nullable=True, default="#FFFFFF")  # Default color
@@ -64,6 +65,7 @@ class Attachment(Base):
     __tablename__ = "attachments"
 
     id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
+    numeric_id = Column(Integer, autoincrement=True, unique=True, index=True)  # Add new numeric ID
     note_id = Column(String(26), ForeignKey("notes.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(String(255), nullable=False)
     file_type = Column(String(50), nullable=False)

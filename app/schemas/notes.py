@@ -13,8 +13,10 @@ class AttachmentResponse(BaseModel):
         from_attributes = True
 
 class CategoryResponse(BaseModel):
-    id: str
+    id: str 
+    numeric_id: int 
     name: str
+    color: str
 
     class Config:
         from_attributes = True
@@ -48,3 +50,4 @@ class NoteCreate(BaseModel):
     content: str
     date: datetime # User must provide this field
     category_name: Optional[str] = None 
+    note_id: Optional[str] = None
