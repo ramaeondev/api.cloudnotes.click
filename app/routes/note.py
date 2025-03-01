@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/notes", tags=["Notes"])
 DEFAULT_CATEGORY_NAME = "Uncategorized"
 
+# Not using in the UI now Moved to create-or-update-note
 @router.post("/create-note", response_model=StandardResponse, status_code=status.HTTP_201_CREATED)
 def create_note(note: NoteCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if not note.date:
@@ -94,7 +95,7 @@ def create_note(note: NoteCreate, db: Session = Depends(get_db), user: User = De
         status_code=status.HTTP_201_CREATED
     )
 
-# Not using in the UI now
+# Not using in the UI now moved to get-all-notes get
 @router.post("/get-all-notes", response_model=StandardResponse)
 def get_notes(
     request: NotesRequest,
@@ -310,7 +311,11 @@ def get_notes(
                 is_active=note.user.is_active, 
             ),
             category=(
-                {"id": note.category.id, "name": note.category.name}
+                {"id": note.category.id, 
+                "numeric_id": note.category.numeric_id,
+                "color": note.category.color,
+                 "name": note.category.name
+                 }
                 if note.category else None
             ),
             attachments=[
@@ -354,6 +359,14 @@ def get_notes_count(
         if date_str not in counts_by_date:
             counts_by_date[date_str] = []
         counts_by_date[date_str].append({"category_id": category_id, "count": count})
+        category = db.query(Category).filter(Category.id == category_id).first()
+        counts_by_date[date_str].append({
+            "category_id": category_id,
+            "numeric_id": category.numeric_id if category else None,
+            "name": category.name if category else DEFAULT_CATEGORY_NAME,
+            "color": category.color if category else "#FFFFFF",
+            "count": count
+        })
 
     return StandardResponse(
         isSuccess=True,
