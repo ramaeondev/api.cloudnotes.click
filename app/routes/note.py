@@ -314,7 +314,7 @@ def get_notes(
                 {"id": note.category.id, 
                 "numeric_id": note.category.numeric_id,
                 "color": note.category.color,
-                 "name": note.category.name
+                "name": note.category.name
                  }
                 if note.category else None
             ),

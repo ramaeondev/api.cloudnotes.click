@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Boolean, TIMESTAMP, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Sequence, String, Boolean, TIMESTAMP, Text, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import ulid
@@ -51,14 +51,25 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(String(26), primary_key=True, default=lambda: ulid.new().str)
-    numeric_id = Column(Integer, autoincrement=True, unique=True, index=True)  # Add new numeric ID
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)  # ✅ Allow NULL
+    
+    numeric_id_seq = Sequence('categories_numeric_id_seq', start=1, increment=1)  # ✅ Define Sequence
+    numeric_id = Column(
+        Integer, 
+        numeric_id_seq,  # ✅ Link Sequence
+        unique=True, 
+        index=True, 
+        nullable=False,
+        server_default=text("nextval('categories_numeric_id_seq')")  # ✅ Corrected default
+    )
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     name = Column(String(50), nullable=False)
-    color = Column(String(10), nullable=True, default="#FFFFFF")  # Default color
+    color = Column(String(10), nullable=True, default="#FFFFFF")
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     
     user = relationship("User", back_populates="categories")
-    notes = relationship("Note", back_populates="category")  # ✅ Added missing relationship
+    notes = relationship("Note", back_populates="category")
+
 
 
 class Attachment(Base):
