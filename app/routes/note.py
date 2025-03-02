@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, logger, status
@@ -351,27 +352,41 @@ def get_notes_count(
         .group_by(Note.date, Note.category_id)
         .all()
     )
+    # Fetch all categories in one go to avoid multiple queries
+    category_ids = {category_id for _, category_id, _ in notes_count if category_id}
+    categories = db.query(Category).filter(Category.id.in_(category_ids)).all()
+    category_map = {cat.id: cat for cat in categories}
 
     # Transform data into a structured format
-    counts_by_date = {}
+    counts_by_date = defaultdict(dict)
+
     for note_date, category_id, count in notes_count:
         date_str = note_date.strftime("%Y-%m-%d")  # Convert date to string
-        if date_str not in counts_by_date:
-            counts_by_date[date_str] = []
-        counts_by_date[date_str].append({"category_id": category_id, "count": count})
-        category = db.query(Category).filter(Category.id == category_id).first()
-        counts_by_date[date_str].append({
-            "category_id": category_id,
-            "numeric_id": category.numeric_id if category else None,
-            "name": category.name if category else DEFAULT_CATEGORY_NAME,
-            "color": category.color if category else "#FFFFFF",
-            "count": count
-        })
+        
+         # Get category details
+        category = category_map.get(category_id)
+        category_key = category_id or "uncategorized"
+
+          # 🔥 Merge count for the same category on the same day
+        if category_key in counts_by_date[date_str]:
+            counts_by_date[date_str][category_key]["count"] += count
+        else:
+            counts_by_date[date_str][category_key] = {
+                "category_id": category_id,
+                "numeric_id": category.numeric_id if category else None,
+                "name": category.name if category else "Uncategorized",
+                "color": category.color if category else "#FFFFFF",
+                "count": count
+            }
+        # Convert dictionary values into lists
+        formatted_counts_by_date = {
+            date: list(categories.values()) for date, categories in counts_by_date.items()
+        }
 
     return StandardResponse(
         isSuccess=True,
         messages=["Note counts retrieved successfully"],
-        data=counts_by_date,
+        data=formatted_counts_by_date,
         status_code=status.HTTP_200_OK
     )
 
