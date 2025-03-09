@@ -31,9 +31,9 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image        
         run: |
-            docker build --no-cache -t cloudnotes .
-            docker tag cloudnotes $ECR_PUBLIC_REGISTRY:$IMAGE_TAG
-            docker push $ECR_PUBLIC_REGISTRY:$IMAGE_TAG
+          docker build -t cloudnotes .
+          docker tag cloudnotes public.ecr.aws/r5p8n8t0/cloudnotes:latest
+          docker push public.ecr.aws/r5p8n8t0/cloudnotes:latest
           
       # - name: Update Lambda Function
       #   run: |
