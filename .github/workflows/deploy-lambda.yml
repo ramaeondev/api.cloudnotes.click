@@ -31,7 +31,7 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image        
         run: |
-            docker build -t logit .
+            docker build --no-cache -t logit .
             docker tag logit $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
             docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
           

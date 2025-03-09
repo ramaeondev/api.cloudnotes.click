@@ -34,4 +34,4 @@ def secure_endpoint(user=Depends(get_current_user)):
 # Include Routes
 app.include_router(auth.router)
 app.include_router(note.router)
-handler = Mangum(app, lifespan="off")
+handler = Mangum(app)
