@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/ramaeondev
+      ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/cloudnotes
       IMAGE_TAG: latest
 
     steps:
@@ -32,8 +32,8 @@ jobs:
       - name: Build, Tag, and Push Docker Image        
         run: |
             docker build --no-cache -t logit .
-            docker tag logit $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
-            docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
+            docker tag logit $ECR_PUBLIC_REGISTRY:$IMAGE_TAG
+            docker push $ECR_PUBLIC_REGISTRY:$IMAGE_TAG
           
       # - name: Update Lambda Function
       #   run: |
