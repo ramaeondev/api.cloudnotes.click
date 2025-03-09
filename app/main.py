@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI
 from app.routes import auth, note
 from app.core.config import init_cors, init_db
 from app.security import get_current_user
+from mangum import Mangum
 
 # Create FastAPI instance
 app = FastAPI(
@@ -33,3 +34,4 @@ def secure_endpoint(user=Depends(get_current_user)):
 # Include Routes
 app.include_router(auth.router)
 app.include_router(note.router)
+handler = Mangum(app, lifespan="off")
