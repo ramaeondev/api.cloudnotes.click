@@ -1,20 +1,16 @@
-# Use official Python image as base
-FROM python:3.11
+# Use the AWS Lambda Python 3.11 base image
+FROM public.ecr.aws/lambda/python:3.11
 
-# Set the working directory in the container
-WORKDIR /app
+# Set the working directory
+WORKDIR /var/task
 
-# Copy only requirements first for caching
+# Copy the requirements file and install dependencies
 COPY requirements.txt .
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Copy the rest of your application
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 8000
-
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Set the Lambda entry point
+# This should point to your Python module and handler function (e.g., app.main.handler)
+CMD ["app.main.handler"]
