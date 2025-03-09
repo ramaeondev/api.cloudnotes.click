@@ -35,8 +35,8 @@ jobs:
             docker tag logit $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
             docker push $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
           
-      - name: Update Lambda Function
-        run: |
-            aws lambda update-function-code \
-            --function-name cloudnotes-fastapi \
-            --image-uri $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
+      # - name: Update Lambda Function
+      #   run: |
+      #       aws lambda update-function-code \
+      #       --function-name cloudnotes-fastapi \
+      #       --image-uri $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
