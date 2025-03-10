@@ -13,7 +13,8 @@ jobs:
       ECR_REGISTRY: 061051237539.dkr.ecr.ap-south-2.amazonaws.com
       ECR_REPOSITORY: cloudnotes/fastapi
       IMAGE_TAG: latest
-      AWS_REGION: ${{ env.AWS_REGION }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      LAMBDA_FUNCTION_NAME: cloudnotes-fastapi
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,7 +24,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         run: |
