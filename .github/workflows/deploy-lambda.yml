@@ -10,10 +10,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/cloudnotes
+      ECR_REGISTRY: 061051237539.dkr.ecr.ap-south-2.amazonaws.com
+      ECR_REPOSITORY: cloudnotes/fastapi
       IMAGE_TAG: latest
-      AWS_LAMBDA_REGION: ${{ secrets.AWS_REGION }}
-
+      AWS_REGION: ${{ env.AWS_REGION }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,24 +23,22 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR Public
+      - name: Login to Amazon ECR
         run: |
-          aws ecr-public get-login-password --region us-east-1 | \
-          docker login --username AWS --password-stdin public.ecr.aws
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: Build, Tag, and Push Docker Image        
         run: |
           docker build -t cloudnotes-lambda .
-          docker tag cloudnotes-lambda:latest public.ecr.aws/r5p8n8t0/cloudnotes:latest
-          docker push public.ecr.aws/r5p8n8t0/cloudnotes:latest
+          docker tag cloudnotes-lambda:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-          
-      - name: Update Lambda Function in ap-south-2
-        run: |
-            aws lambda update-function-code \
-              --region ap-south-2 \
-              --function-name cloudnotes-fastapi \
-              --image-uri public.ecr.aws/r5p8n8t0/cloudnotes:latest
-
+      # - name: Update AWS Lambda Function
+      #   run: |
+      #     aws lambda update-function-code \
+      #       --region ${{ env.AWS_REGION }} \
+      #       --function-name cloudnotes-fastapi \
+      #       --image-uri ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
