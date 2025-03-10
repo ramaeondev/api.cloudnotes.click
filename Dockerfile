@@ -1,5 +1,5 @@
 # Use the AWS Lambda Python 3.11 base image
-FROM --platform=linux/arm64 python:3.11-slim
+FROM public.ecr.aws/lambda/python:3.11
 
 # Set the working directory to Lambda's expected location
 WORKDIR ${LAMBDA_TASK_ROOT}
