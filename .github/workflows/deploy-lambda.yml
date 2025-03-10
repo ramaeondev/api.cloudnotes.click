@@ -12,6 +12,7 @@ jobs:
     env:
       ECR_PUBLIC_REGISTRY: public.ecr.aws/r5p8n8t0/cloudnotes
       IMAGE_TAG: latest
+      AWS_LAMBDA_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
       - name: Checkout repository
@@ -31,12 +32,15 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image        
         run: |
-          docker build -t cloudnotes .
-          docker tag cloudnotes public.ecr.aws/r5p8n8t0/cloudnotes:latest
+          docker build -t cloudnotes-lambda .
+          docker tag cloudnotes-lambda:latest public.ecr.aws/r5p8n8t0/cloudnotes:latest
           docker push public.ecr.aws/r5p8n8t0/cloudnotes:latest
+
           
-      # - name: Update Lambda Function
-      #   run: |
-      #       aws lambda update-function-code \
-      #       --function-name cloudnotes-fastapi \
-      #       --image-uri $ECR_PUBLIC_REGISTRY/logit:$IMAGE_TAG
+      - name: Update Lambda Function in ap-south-2
+        run: |
+            aws lambda update-function-code \
+              --region ap-south-2 \
+              --function-name cloudnotes-fastapi \
+              --image-uri public.ecr.aws/r5p8n8t0/cloudnotes:latest
+
