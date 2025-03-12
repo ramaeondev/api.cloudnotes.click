@@ -4,6 +4,8 @@ from app.core.config import init_cors, init_db
 from app.security import get_current_user
 from mangum import Mangum
 import json
+import traceback
+import sys
 
 # Create FastAPI instance
 app = FastAPI(
@@ -23,9 +25,12 @@ init_cors(app)
 @app.on_event("startup")
 async def startup_event():
     try:
+        print("Starting DB initialization...")
         init_db()
+        print("DB initialization completed successfully")
     except Exception as e:
         print(f"Error during startup: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         # Log the error but don't fail startup completely
 
 @app.get("/")
@@ -42,11 +47,13 @@ app.include_router(auth.router)
 app.include_router(note.router)
 
 # Create the Mangum handler
-_handler = Mangum(app)
+_handler = Mangum(app, lifespan="off", api_gateway_base_path="/")
 
 # Wrapper function to handle both direct Lambda invocations and API Gateway events
 def handler(event, context):
     try:
+        print(f"Event received: {json.dumps(event)}")
+        
         # If this is a direct Lambda invocation (not through API Gateway)
         if 'httpMethod' not in event and 'path' not in event:
             # Return a simple response for health checks or direct invocations
@@ -55,11 +62,19 @@ def handler(event, context):
                 'statusCode': 200,
                 'body': json.dumps({'message': 'Lambda function is healthy'})
             }
-        # Otherwise, pass to Mangum for API Gateway events
+        
+        # For API Gateway request
+        print(f"Processing API Gateway request for path: {event.get('path', 'unknown')}")
         return _handler(event, context)
     except Exception as e:
+        error_detail = traceback.format_exc()
         print(f"Error in handler: {str(e)}")
+        print(f"Traceback: {error_detail}")
         return {
             'statusCode': 500,
-            'body': json.dumps({'message': f'Internal Server Error: {str(e)}'})
+            'body': json.dumps({
+                'message': 'Internal Server Error',
+                'error': str(e),
+                'traceback': error_detail
+            })
         }
