@@ -11,5 +11,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your application
 COPY . .
 
-# Set the Lambda handler
-CMD ["app.main.handler"]
+# Set the Lambda entry point for FastAPI with Mangum
+CMD ["main.handler"]
