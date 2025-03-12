@@ -47,7 +47,7 @@ app.include_router(auth.router)
 app.include_router(note.router)
 
 # Create the Mangum handler
-_handler = Mangum(app, lifespan="off", api_gateway_base_path="/")
+_handler = Mangum(app, lifespan="off")
 
 # Wrapper function to handle both direct Lambda invocations and API Gateway events
 def handler(event, context):
