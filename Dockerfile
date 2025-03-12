@@ -1,15 +1,14 @@
-# Use the AWS Lambda Python 3.11 base image
 FROM public.ecr.aws/lambda/python:3.11
 
-# Set the working directory to Lambda's expected location
+# Set working directory inside Lambda container
 WORKDIR ${LAMBDA_TASK_ROOT}
 
-# Copy requirements file and install dependencies
+# Copy application files
+COPY ./app ${LAMBDA_TASK_ROOT}/app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your application
-COPY . .
+# Install dependencies
+RUN pip3 install -r requirements.txt --target "${LAMBDA_TASK_ROOT}" -U --no-cache-dir
 
-# Set the Lambda entry point for FastAPI with Mangum
-CMD ["main.handler"]
+# Set the correct handler (adjust based on your structure)
+CMD ["app.main.handler"]
