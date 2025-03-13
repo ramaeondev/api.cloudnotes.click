@@ -8,9 +8,10 @@ from app.db.database import Base,engine
 
 def init_cors(app):
     """Initialize CORS settings for the FastAPI application."""
+    config = get_config()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # 🔴 WARNING: Update this in production!
+        allow_origins=config.allowed_origins,
         allow_credentials=True, 
         allow_methods=["*"],
         allow_headers=["*"],
@@ -31,6 +32,10 @@ class Config(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:4200")
     ALGORITHM:str = os.getenv("ALGORITHM", "HS256")
     PWD_CONTEXT: ClassVar[CryptContext] = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    @property
+    def allowed_origins(self):
+        """Return allowed origins for CORS."""
+        return self.FRONTEND_URL.split(",")
     
 @lru_cache
 def get_config():
