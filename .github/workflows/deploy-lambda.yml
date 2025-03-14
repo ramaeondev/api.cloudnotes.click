@@ -54,9 +54,10 @@ jobs:
           aws lambda update-function-code \
             --region ${{ env.AWS_REGION }} \
             --function-name ${{env.LAMBDA_FUNCTION_NAME}} \
-            --image-uri ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            --image-uri ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
+            > /dev/null 2>&1
           
-            echo "Waiting for Lambda update to complete..."
+          echo "Waiting for Lambda update to complete..."
           aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
           
           echo "Lambda function updated successfully!"
