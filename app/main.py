@@ -60,33 +60,33 @@ list_routes(app)
 # Create the Mangum handler
 _handler = Mangum(app, lifespan="off")
 
-# Wrapper function to handle both direct Lambda invocations and API Gateway events
-def handler(event, context):
-    try:
-        print(f"Event received: {json.dumps(event)}")
-        print(f"Path: {event.get('path')}")
-        print(f"HTTP Method: {event.get('httpMethod')}")
-        # If this is a direct Lambda invocation (not through API Gateway)
-        if 'httpMethod' not in event and 'path' not in event:
-            # Return a simple response for health checks or direct invocations
-            print("Direct Lambda invocation detected")
-            return {
-                'statusCode': 200,
-                'body': json.dumps({'message': 'Lambda function is healthy'})
-            }
+# # Wrapper function to handle both direct Lambda invocations and API Gateway events
+# def handler(event, context):
+#     try:
+#         print(f"Event received: {json.dumps(event)}")
+#         print(f"Path: {event.get('path')}")
+#         print(f"HTTP Method: {event.get('httpMethod')}")
+#         # If this is a direct Lambda invocation (not through API Gateway)
+#         if 'httpMethod' not in event and 'path' not in event:
+#             # Return a simple response for health checks or direct invocations
+#             print("Direct Lambda invocation detected")
+#             return {
+#                 'statusCode': 200,
+#                 'body': json.dumps({'message': 'Lambda function is healthy'})
+#             }
         
-        # For API Gateway request
-        print(f"Processing API Gateway request for path: {event.get('path', 'unknown')}")
-        return _handler(event, context)
-    except Exception as e:
-        error_detail = traceback.format_exc()
-        print(f"Error in handler: {str(e)}")
-        print(f"Traceback: {error_detail}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': 'Internal Server Error',
-                'error': str(e),
-                'traceback': error_detail
-            })
-        }
+#         # For API Gateway request
+#         print(f"Processing API Gateway request for path: {event.get('path', 'unknown')}")
+#         return _handler(event, context)
+#     except Exception as e:
+#         error_detail = traceback.format_exc()
+#         print(f"Error in handler: {str(e)}")
+#         print(f"Traceback: {error_detail}")
+#         return {
+#             'statusCode': 500,
+#             'body': json.dumps({
+#                 'message': 'Internal Server Error',
+#                 'error': str(e),
+#                 'traceback': error_detail
+#             })
+#         }
