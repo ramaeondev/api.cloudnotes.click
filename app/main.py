@@ -12,7 +12,6 @@ app = FastAPI(
     title="Cloudnotes api",
     version="1.0",
     description="API for work logging application",
-    root_path="/prod",
     openapi_tags=[
         {
             "name": "Authentication",
@@ -59,7 +58,7 @@ def list_routes(app):
 list_routes(app)
 
 # Create the Mangum handler
-_handler = Mangum(app, lifespan="off", api_gateway_base_path="prod")
+_handler = Mangum(app, lifespan="off")
 
 # Wrapper function to handle both direct Lambda invocations and API Gateway events
 def handler(event, context):
