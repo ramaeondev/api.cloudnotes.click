@@ -9,12 +9,17 @@ from app.db.database import Base,engine
 def init_cors(app):
     """Initialize CORS settings for the FastAPI application."""
     config = get_config()
+    origins = config.allowed_origins
+    
+    print(f"Allowed origins: {origins}")
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.allowed_origins,
+        allow_origins=origins,
         allow_credentials=True, 
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["Content-Type", "Authorization"],
     )
 
 def init_db():
