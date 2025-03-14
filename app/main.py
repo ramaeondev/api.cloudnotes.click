@@ -3,9 +3,13 @@ from app.routes import auth, note
 from app.core.config import init_cors, init_db
 from app.security import get_current_user
 from mangum import Mangum
-import json
 import traceback
-import sys
+import logging
+
+# Setup Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # Create FastAPI instance
 app = FastAPI(
@@ -19,23 +23,24 @@ app = FastAPI(
         }
     ]
 )
-init_cors(app) 
+# Initialize CORS
+init_cors(app)
 
-# Initialize DB and CORS during startup
+# Initialize DB connection
 @app.on_event("startup")
 async def startup_event():
     try:
-        print("Starting DB initialization...")
+        logger.info("Starting DB initialization...")
         init_db()
-        print("DB initialization completed successfully")
-        # Print all registered routes
-        print("Listing all registered routes:")
+        logger.info("DB initialization completed successfully")
+
+        # Log all registered routes
+        logger.info("Listing all registered routes:")
         for route in app.routes:
-            print(f"{route.path} -> {route.methods}")
+            logger.info(f"{route.path} -> {route.methods}")
     except Exception as e:
-        print(f"Error during startup: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
-        # Log the error but don't fail startup completely
+        logger.error(f"Error during startup: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
 
 @app.get("/")
 def read_root():
@@ -58,35 +63,4 @@ def list_routes(app):
 list_routes(app)
 
 # Create the Mangum handler
-_handler = Mangum(app, lifespan="off")
-
-# # Wrapper function to handle both direct Lambda invocations and API Gateway events
-# def handler(event, context):
-#     try:
-#         print(f"Event received: {json.dumps(event)}")
-#         print(f"Path: {event.get('path')}")
-#         print(f"HTTP Method: {event.get('httpMethod')}")
-#         # If this is a direct Lambda invocation (not through API Gateway)
-#         if 'httpMethod' not in event and 'path' not in event:
-#             # Return a simple response for health checks or direct invocations
-#             print("Direct Lambda invocation detected")
-#             return {
-#                 'statusCode': 200,
-#                 'body': json.dumps({'message': 'Lambda function is healthy'})
-#             }
-        
-#         # For API Gateway request
-#         print(f"Processing API Gateway request for path: {event.get('path', 'unknown')}")
-#         return _handler(event, context)
-#     except Exception as e:
-#         error_detail = traceback.format_exc()
-#         print(f"Error in handler: {str(e)}")
-#         print(f"Traceback: {error_detail}")
-#         return {
-#             'statusCode': 500,
-#             'body': json.dumps({
-#                 'message': 'Internal Server Error',
-#                 'error': str(e),
-#                 'traceback': error_detail
-#             })
-#         }
+handler = Mangum(app)
