@@ -262,11 +262,11 @@ def get_notes_count(
     for note_date, category_id, count in notes_count:
         date_str = note_date.strftime("%Y-%m-%d")  # Convert date to string
         
-         # Get category details
+        # Get category details
         category = category_map.get(category_id)
         category_key = category_id or "uncategorized"
 
-          # 🔥 Merge count for the same category on the same day
+        # 🔥 Merge count for the same category on the same day
         if category_key in counts_by_date[date_str]:
             counts_by_date[date_str][category_key]["count"] += count
         else:
@@ -274,10 +274,11 @@ def get_notes_count(
                 "category_id": category_id,
                 "numeric_id": category.numeric_id if category else None,
                 "name": category.name if category else "Uncategorized",
-                "color": category.color if category else "#FFFFFF",
+                # Extract the actual color string from the Color object
+                "color": category.color.color if category and category.color else "#FFFFFF",
                 "count": count
             }
-        # Convert dictionary values into lists
+    # Convert dictionary values into lists
     formatted_counts_by_date = {
         date: list(categories.values()) for date, categories in counts_by_date.items()
     }
@@ -288,6 +289,7 @@ def get_notes_count(
         data=formatted_counts_by_date,
         status_code=status.HTTP_200_OK
     )
+
 
 @router.get("/categories", response_model=StandardResponse)
 def get_categories(
