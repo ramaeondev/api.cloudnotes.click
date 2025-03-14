@@ -9,9 +9,10 @@ import sys
 
 # Create FastAPI instance
 app = FastAPI(
-    title="Logit API",
+    title="Cloudnotes api",
     version="1.0",
     description="API for work logging application",
+    root_path="/prod",
     openapi_tags=[
         {
             "name": "Authentication",
@@ -28,6 +29,10 @@ async def startup_event():
         print("Starting DB initialization...")
         init_db()
         print("DB initialization completed successfully")
+        # Print all registered routes
+        print("Listing all registered routes:")
+        for route in app.routes:
+            print(f"{route.path} -> {route.methods}")
     except Exception as e:
         print(f"Error during startup: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
@@ -46,14 +51,22 @@ def secure_endpoint(user=Depends(get_current_user)):
 app.include_router(auth.router)
 app.include_router(note.router)
 
+def list_routes(app):
+    print("Registered Routes:")
+    for route in app.routes:
+        print(f"{route.path} -> {route.methods}")
+
+list_routes(app)
+
 # Create the Mangum handler
-_handler = Mangum(app, lifespan="off")
+_handler = Mangum(app, lifespan="off", api_gateway_base_path="prod")
 
 # Wrapper function to handle both direct Lambda invocations and API Gateway events
 def handler(event, context):
     try:
         print(f"Event received: {json.dumps(event)}")
-        
+        print(f"Path: {event.get('path')}")
+        print(f"HTTP Method: {event.get('httpMethod')}")
         # If this is a direct Lambda invocation (not through API Gateway)
         if 'httpMethod' not in event and 'path' not in event:
             # Return a simple response for health checks or direct invocations
