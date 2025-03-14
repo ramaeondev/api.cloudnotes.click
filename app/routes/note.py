@@ -151,7 +151,7 @@ def create_or_update_note(
         isSuccess=True,
         messages=["Note created successfully"],
         errors=[],
-        data=NoteResponse.model_validate(new_note),
+        data=NoteResponse.from_orm(new_note),
         status_code=status.HTTP_201_CREATED
     )
 

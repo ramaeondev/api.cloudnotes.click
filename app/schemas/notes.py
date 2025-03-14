@@ -12,11 +12,20 @@ class AttachmentResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# New nested model for Color
+class ColorResponse(BaseModel):
+    id: int
+    color: str
+
+    class Config:
+        from_attributes = True
+
+# Updated CategoryResponse using the nested ColorResponse model
 class CategoryResponse(BaseModel):
     id: str 
     numeric_id: int 
     name: str
-    color: str
+    color: Optional[ColorResponse] = None
 
     class Config:
         from_attributes = True
@@ -39,7 +48,7 @@ class NoteResponse(BaseModel):
     attachments: List[AttachmentResponse] = []
 
     class Config:
-        from_attributes = True  # ✅ This ensures the Pydantic model works with SQLAlchemy
+        from_attributes = True  # Ensures the Pydantic model works with SQLAlchemy
 
 class NotesRequest(BaseModel):
     month: int  # UI will send this (1-12)
@@ -48,6 +57,6 @@ class NotesRequest(BaseModel):
 class NoteCreate(BaseModel):
     title: str
     content: str
-    date: datetime # User must provide this field
+    date: datetime  # User must provide this field
     category_name: Optional[str] = None 
     note_id: Optional[str] = None
