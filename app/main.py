@@ -33,11 +33,7 @@ async def startup_event():
         logger.info("Starting DB initialization...")
         init_db()
         logger.info("DB initialization completed successfully")
-
-        # Log all registered routes
-        logger.info("Listing all registered routes:")
-        for route in app.routes:
-            logger.info(f"{route.path} -> {route.methods}")
+        
     except Exception as e:
         logger.error(f"Error during startup: {str(e)}")
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -55,12 +51,6 @@ def secure_endpoint(user=Depends(get_current_user)):
 app.include_router(auth.router)
 app.include_router(note.router)
 
-def list_routes(app):
-    print("Registered Routes:")
-    for route in app.routes:
-        print(f"{route.path} -> {route.methods}")
-
-list_routes(app)
 
 # Create the Mangum handler
 handler = Mangum(app)
