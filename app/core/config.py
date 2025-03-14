@@ -35,9 +35,11 @@ class Config(BaseSettings):
     @property
     def allowed_origins(self):
         """Return allowed origins for CORS."""
-        if os.getenv("ENV", "development") == "production":
-            return self.FRONTEND_URL.split(",")  # Restrict to specific origins
+        env = os.getenv("ENV", "development")
+        if env == "production":
+            return self.FRONTEND_URL.split(",")  # Restrict in production
         return ["*"]  # Allow all origins in development
+
 
     
 @lru_cache
