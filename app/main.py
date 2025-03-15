@@ -1,7 +1,7 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Response
 from fastapi.responses import JSONResponse
 from app.routes import auth, note
-from app.core.config import init_cors, init_db
+from app.core.config import get_config, init_cors, init_db
 from app.security import get_current_user
 from mangum import Mangum
 import traceback
@@ -30,15 +30,14 @@ init_cors(app)
 @app.options("/{full_path:path}")
 async def preflight_handler(full_path: str):
     """Handle preflight OPTIONS request and return correct CORS headers."""
-    return JSONResponse(
-        content={"message": "CORS preflight OK"},
-        headers={
-            "Access-Control-Allow-Origin": "https://platform.cloudnotes.click",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Credentials": "true",
-        },
-    )
+    config = get_config()  # ✅ Get the latest allowed origins
+    
+    response = Response(status_code=204)  # ✅ Return `204 No Content`
+    response.headers["Access-Control-Allow-Origin"] = ",".join(config.allowed_origins)
+    response.headers["Access-Control-Allow-Methods"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 # Initialize DB connection
 @app.on_event("startup")
