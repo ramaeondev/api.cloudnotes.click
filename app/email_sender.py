@@ -11,7 +11,7 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", "no-reply@cloudnotes.click")
 FROM_NAME = os.getenv("FROM_NAME", "Cloudnotes Notifications")
 
 # Brevo API endpoint for sending transactional emails
-API_URL = "https://api.brevo.com/v3/smtp/email"
+API_URL = os.getenv("BREVO_API_URL", "https://api.brevo.com/v3/smtp/email")
 
 # Function to send an email using Brevo's API
 def send_email(to_email: str, subject: str, body: str):
@@ -40,10 +40,13 @@ def send_email(to_email: str, subject: str, body: str):
 
         # Check the response from the API
         if response.status_code == 200:
-            print(f"Email sent to {to_email}")
+            # If the response contains messageId, treat it as a success
+            if "messageId" in response.json():
+                print(f"Email successfully sent to {to_email} with message ID: {response.json()['messageId']}")
+            else:
+                print(f"Failed to send email. No message ID found in the response.")
         else:
             print(f"Failed to send email: {response.text}")
     
     except Exception as e:
         print(f"An error occurred: {e}")
-
