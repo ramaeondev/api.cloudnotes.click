@@ -61,6 +61,18 @@ jobs:
           aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
           
           echo "Lambda function updated successfully!"
+      
+      - name: Deploy AWS API Gateway
+        run: |
+          echo "Deploying API Gateway..."
+          # Deploy the API Gateway to the specified stage
+          aws apigatewayv2 create-deployment \
+            --api-id ${{ secrets.API_GATEWAY_API_ID }} \
+            --stage-name prod \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "API Gateway deployed successfully!"
+
 
       - name: Install jq
         run: |
@@ -74,7 +86,8 @@ jobs:
           
           # Get list of images sorted by push time (oldest first)
           IMAGE_LIST=$(aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} \
-            --query 'imageIds | sort_by(@, &imagePushedAt) | [].imageDigest' --output json | jq -r '.[]')
+              --query 'imageIds | sort_by(@, &imagePushedAt) | reverse(@) | [].imageDigest' --output json | jq -r '.[]')
+
 
           IMAGE_COUNT=$(echo "$IMAGE_LIST" | wc -l)
           IMAGES_TO_DELETE=$((IMAGE_COUNT - 3))
