@@ -28,16 +28,12 @@ app = FastAPI(
 init_cors(app)
 # ✅ Manually handle OPTIONS
 @app.options("/{full_path:path}")
-async def preflight_handler(full_path: str):
-    """Handle preflight OPTIONS request and return correct CORS headers."""
-    config = get_config()  # ✅ Get the latest allowed origins
-    
-    response = Response(status_code=204)  # ✅ Return `204 No Content`
-    response.headers["Access-Control-Allow-Origin"] = ",".join(config.allowed_origins)
-    response.headers["Access-Control-Allow-Methods"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+async def preflight_handler():
+    return {
+        "Access-Control-Allow-Origin": "https://platform.cloudnotes.click",
+        "Access-Control-Allow-Methods": "OPTIONS, GET, POST, PUT, DELETE",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    }
 
 # Initialize DB connection
 @app.on_event("startup")
