@@ -82,24 +82,24 @@ jobs:
 
       - name: Cleanup old images in ECR
         run: |
-          echo "Fetching image list from ECR..."
-          
-          # Get list of images sorted by push time (oldest first)
-          IMAGE_LIST=$(aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} \
-              --query 'imageIds | sort_by(@, &imagePushedAt) | reverse(@) | [].imageDigest' --output json | jq -r '.[]')
-
-
-          IMAGE_COUNT=$(echo "$IMAGE_LIST" | wc -l)
-          IMAGES_TO_DELETE=$((IMAGE_COUNT - 3))
-
-          if [[ $IMAGES_TO_DELETE -gt 0 ]]; then
-            echo "Deleting $IMAGES_TO_DELETE old images..."
-
-            # Loop through images to delete (excluding the latest 3)
-            echo "$IMAGE_LIST" | head -n "$IMAGES_TO_DELETE" | while read -r image_digest; do
-              aws ecr batch-delete-image --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageDigest=$image_digest
-              echo "Deleted image $image_digest"
-            done
-          else
-            echo "No old images to delete."
-          fi
+            echo "Fetching image list from ECR..."
+            
+            # Get list of images with their push time, sorted by push time (oldest first)
+            IMAGE_LIST=$(aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} \
+              --query 'imageIds | sort_by(@, &imagePushedAt) | [].imageDigest' --output json | jq -r '.[]')
+  
+            IMAGE_COUNT=$(echo "$IMAGE_LIST" | wc -l)
+            IMAGES_TO_DELETE=$((IMAGE_COUNT - 3))
+  
+            if [[ $IMAGES_TO_DELETE -gt 0 ]]; then
+              echo "Deleting $IMAGES_TO_DELETE old images..."
+  
+              # Loop through images to delete (excluding the latest 3)
+              echo "$IMAGE_LIST" | head -n "$IMAGES_TO_DELETE" | while read -r image_digest; do
+                aws ecr batch-delete-image --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageDigest=$image_digest
+                echo "Deleted image $image_digest"
+              done
+            else
+              echo "No old images to delete."
+            fi
+  
