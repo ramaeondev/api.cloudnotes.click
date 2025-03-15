@@ -67,7 +67,7 @@ jobs:
           echo "Deploying API Gateway..."
           # Deploy the API Gateway to the specified stage
           aws apigateway create-deployment \
-            --api-id ${{ secrets.API_GATEWAY_API_ID }} \
+            --rest-api-id ${{ secrets.API_GATEWAY_API_ID }} \
             --stage-name prod \
             --region ${{ env.AWS_REGION }}
           
