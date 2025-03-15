@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi.responses import JSONResponse
 from app.routes import auth, note
 from app.core.config import init_cors, init_db
 from app.security import get_current_user
@@ -25,6 +26,19 @@ app = FastAPI(
 )
 # Initialize CORS
 init_cors(app)
+# ✅ Manually handle OPTIONS
+@app.options("/{full_path:path}")
+async def preflight_handler(full_path: str):
+    """Handle preflight OPTIONS request and return correct CORS headers."""
+    return JSONResponse(
+        content={"message": "CORS preflight OK"},
+        headers={
+            "Access-Control-Allow-Origin": "https://platform.cloudnotes.click",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )
 
 # Initialize DB connection
 @app.on_event("startup")
