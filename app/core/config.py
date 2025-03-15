@@ -1,6 +1,7 @@
 import os
 from functools import lru_cache
 from typing import ClassVar
+from fastapi import Request
 from pydantic_settings import BaseSettings
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,15 +12,17 @@ def init_cors(app):
     config = get_config()
     origins = config.allowed_origins
     
+    # For debugging
     print(f"Allowed origins: {origins}")
-
+    
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True, 
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Accept"],
         expose_headers=["Content-Type", "Authorization"],
+        max_age=600,  # Cache preflight requests for 10 minutes
     )
 
 def init_db():
