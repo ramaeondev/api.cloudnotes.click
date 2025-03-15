@@ -21,6 +21,10 @@ app = FastAPI(
         {
             "name": "Authentication",
             "description": "Operations related to authentication",
+        },
+        {
+            "name": "Notes",
+            "description": "Operations related to managing notes",
         }
     ]
 )
