@@ -12,7 +12,7 @@ def init_cors(app):
     
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["https://platform.cloudnotes.click"], # ✅ Use allowed origins from config
+        allow_origins=config.allowed_origins,  # ✅ Use allowed origins from config
         allow_credentials=True, 
         allow_methods=["*"],  # ✅ Allow all methods
         allow_headers=["*"],  # ✅ Allow all headers
