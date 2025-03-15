@@ -9,14 +9,19 @@ from app.db.database import Base,engine
 def init_cors(app):
     """Initialize CORS settings for the FastAPI application."""
     config = get_config()
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.allowed_origins,
+        allow_origins=config.allowed_origins,  # ✅ Use allowed origins from config
         allow_credentials=True, 
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["*"],  # ✅ Allow all methods
+        allow_headers=["*"],  # ✅ Allow all headers
+        expose_headers=["*"],  # ✅ Expose all headers
+        max_age=600,  # Cache preflight requests for 10 minutes
     )
-
+   # Debugging Log
+    print(f"✅ CORS Allowed Origins: {config.allowed_origins}")  # 🛠 Debugging
+    
 def init_db():
     """Initialize the database and create tables."""
     Base.metadata.create_all(bind=engine)
@@ -29,16 +34,17 @@ class Config(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
     CONFIRMATION_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("CONFIRMATION_TOKEN_EXPIRE_MINUTES", 60))
     BASE_URL: str = os.getenv("BASE_URL", "http://localhost:8000")
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:4200")
+    FRONTEND_URLS: str = os.getenv("FRONTEND_URLS", "https://platform.cloudnotes.click,https://cloudnotes.click")
     ALGORITHM:str = os.getenv("ALGORITHM", "HS256")
     PWD_CONTEXT: ClassVar[CryptContext] = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    @property
-    def allowed_origins(self):
-        """Return allowed origins for CORS."""
+
+    allowed_origins: list[str] = []
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         env = os.getenv("ENV", "development")
-        if env == "production":
-            return self.FRONTEND_URL.split(",")  # Restrict in production
-        return ["*"]  # Allow all origins in development
+        frontend_urls = self.FRONTEND_URLS.split(",")
+        self.allowed_origins = [url.strip() for url in frontend_urls] if env == "production" else ["*"]
 
 
     
