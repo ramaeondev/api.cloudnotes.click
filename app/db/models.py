@@ -119,3 +119,32 @@ class Color(Base):
     __table_args__ = (
         Index('idx_color_unique', 'color'),
     )
+class SubscriptionType(Base):
+    __tablename__ = "subscription_types"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), unique=True, nullable=False)  # Unique subscription name
+    description = Column(Text, nullable=True)  # Optional description
+
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+
+    subscriptions = relationship("UserSubscription", back_populates="subscription_type")
+
+
+class UserSubscription(Base):
+    __tablename__ = "user_subscriptions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Nullable for guest users
+    email = Column(String(100), nullable=False)  # Required for both users and guests
+    subscription_type_id = Column(Integer, ForeignKey("subscription_types.id", ondelete="CASCADE"), nullable=False)
+
+    subscribed_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    unsubscribed_at = Column(TIMESTAMP, nullable=True)  # Tracks when a user unsubscribes
+    is_active = Column(Boolean, default=True, nullable=False)  # True = subscribed, False = unsubscribed
+
+    user = relationship("User", back_populates="subscriptions", foreign_keys=[user_id])
+    subscription_type = relationship("SubscriptionType", back_populates="subscriptions")
+
+User.subscriptions = relationship("UserSubscription", back_populates="user")
+SubscriptionType.subscriptions = relationship("UserSubscription", back_populates="subscription_type")
