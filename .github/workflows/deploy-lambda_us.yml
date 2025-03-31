@@ -1,0 +1,102 @@
+name: Deploy to AWS ECR and Lambda in US Region
+
+on: 
+  workflow_dispatch:    
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      US_ECR_REGISTRY: ${{ secrets.US_US_ECR_REGISTRY }}
+      ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+      IMAGE_TAG: ${{ github.sha }} 
+      US_AWS_REGION: ${{ secrets.US_US_AWS_REGION }}
+      LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.US_US_AWS_REGION }}
+      
+
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.US_US_AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.US_ECR_REGISTRY }}
+
+      - name: Build, Tag, and Push Docker Image        
+        run: |
+          set -euxo pipefail
+          echo "Building Docker image..."
+          docker build -t cloudnotes-fastapi:${{ env.IMAGE_TAG }} .
+          
+          echo "Tagging image..."
+          docker tag cloudnotes-fastapi:${{ env.IMAGE_TAG }} ${{ env.US_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          
+          echo "Pushing image to ECR..."
+          docker push ${{ env.US_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          
+          echo "Image successfully pushed!"
+        
+
+      - name: Update AWS Lambda Function
+        run: |
+          aws lambda update-function-code \
+            --region ${{ env.US_AWS_REGION }} \
+            --function-name ${{env.LAMBDA_FUNCTION_NAME}} \
+            --image-uri ${{ env.US_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
+            > /dev/null 2>&1
+          
+          echo "Waiting for Lambda update to complete..."
+          aws lambda wait function-updated --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+          
+          echo "Lambda function updated successfully!"
+      
+      - name: Deploy AWS API Gateway
+        run: |
+          echo "Deploying API Gateway..."
+          # Deploy the API Gateway to the specified stage
+          aws apigateway create-deployment \
+            --rest-api-id ${{ secrets.API_GATEWAY_API_ID }} \
+            --stage-name prod \
+            --region ${{ env.US_AWS_REGION }}
+          
+          echo "API Gateway deployed successfully!"
+
+
+      - name: Install jq
+        run: |
+          echo "Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+          echo "jq installed successfully!"
+
+      - name: Cleanup old images in ECR
+        run: |
+            echo "Fetching image list from ECR..."
+            
+            # Get list of images with their push time, sorted by push time (oldest first)
+            IMAGE_LIST=$(aws ecr list-images --repository-name ${{ env.ECR_REPOSITORY }} \
+              --query 'imageIds | sort_by(@, &imagePushedAt) | [].imageDigest' --output json | jq -r '.[]')
+  
+            IMAGE_COUNT=$(echo "$IMAGE_LIST" | wc -l)
+            IMAGES_TO_DELETE=$((IMAGE_COUNT - 3))
+  
+            if [[ $IMAGES_TO_DELETE -gt 0 ]]; then
+              echo "Deleting $IMAGES_TO_DELETE old images..."
+  
+              # Loop through images to delete (excluding the latest 3)
+              echo "$IMAGE_LIST" | head -n "$IMAGES_TO_DELETE" | while read -r image_digest; do
+                aws ecr batch-delete-image --repository-name ${{ env.ECR_REPOSITORY }} --image-ids imageDigest=$image_digest
+                echo "Deleted image $image_digest"
+              done
+            else
+              echo "No old images to delete."
+            fi
+  
