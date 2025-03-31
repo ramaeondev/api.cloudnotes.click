@@ -10,7 +10,6 @@ jobs:
       US_ECR_REGISTRY: ${{ secrets.US_US_ECR_REGISTRY }}
       ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
       IMAGE_TAG: ${{ github.sha }} 
-      US_AWS_REGION: ${{ secrets.US_US_AWS_REGION }}
       LAMBDA_FUNCTION_NAME: ${{ secrets.LAMBDA_FUNCTION_NAME }}
 
     steps:
@@ -18,17 +17,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.US_US_AWS_REGION }}
+          aws-region: ${{ secrets.US_AWS_REGION }}
       
 
 
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region ${{ env.US_US_AWS_REGION }} | \
+          aws ecr get-login-password --region ${{ secrets.US_AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.US_ECR_REGISTRY }}
 
       - name: Build, Tag, and Push Docker Image        
@@ -49,7 +48,7 @@ jobs:
       - name: Update AWS Lambda Function
         run: |
           aws lambda update-function-code \
-            --region ${{ env.US_AWS_REGION }} \
+            --region ${{ secrets.US_AWS_REGION }} \
             --function-name ${{env.LAMBDA_FUNCTION_NAME}} \
             --image-uri ${{ env.US_ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
             > /dev/null 2>&1
@@ -66,7 +65,7 @@ jobs:
           aws apigateway create-deployment \
             --rest-api-id ${{ secrets.API_GATEWAY_API_ID }} \
             --stage-name prod \
-            --region ${{ env.US_AWS_REGION }}
+            --region ${{ secrets.US_AWS_REGION }}
           
           echo "API Gateway deployed successfully!"
 
